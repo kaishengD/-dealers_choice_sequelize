@@ -47,7 +47,8 @@ Pokemon.belongsTo(Type);
 //express
 const express = require('express');
 const app = express();
-app.use(express.urlencoded({extended:false}))
+app.use(express.urlencoded({extended:false}));
+app.use(require('method-override')('_method'));
 const init = async()=>{
     await db.authenticate();
     console.log('connected')
@@ -66,6 +67,18 @@ init();
 app.get('/',(req,res,next)=>{
     res.redirect('pokemons')
 })
+
+app.delete('/pokemons/:id',async(req,res,next)=>{
+    try{
+        const pokemon = await Pokemon.findByPk(req.params.id);
+        await pokemon.destroy();
+        console.log('pokemon goes back the nature!');
+        res.redirect(`/types/${pokemon.typeId}`);
+    }catch(err){
+        next(err)
+    }
+})
+
 
 app.post('/pokemons',async(req,res,next)=>{
     try{
@@ -120,7 +133,14 @@ app.get('/types/:id', async(req,res,next)=>{
             }
         )
         const html = pokemons.map((pokemon)=>{
-            return `<ul><li>${pokemon.name}</li></ul>`
+            return `
+            <ul><li>${pokemon.name}
+            <form method = 'POST' action = '/pokemons/${pokemon.id}?_method=delete'>
+            <button>
+                RELEASE
+            </button>
+            </form>
+            </li></ul>`
         }).join('')
         res.send(
             `
